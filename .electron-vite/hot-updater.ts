@@ -19,13 +19,13 @@ import AdmZip from "adm-zip";
 import packageFile from "../package.json";
 import buildConfig from "../build.json";
 import { hotPublishConfigName } from "../src/main/config/const";
-import { okayLog, infoLog, errorLog, doneLog } from "./log";
+import { okayLog, errorLog, doneLog } from "./log";
 
 const platformName = platform().includes("win32")
   ? "win"
   : platform().includes("darwin")
-  ? "mac"
-  : "linux";
+    ? "mac"
+    : "linux";
 const buildPath = join(
   ".",
   "build",
@@ -49,42 +49,23 @@ const start = async () => {
   console.log(chalk.green.bold(`Start packing  \n`));
 
   if (buildConfig.asar) {
-    console.log(
-      "\n" +
-        errorLog +
-        "  " +
-        chalk.red(
-          "Please make sure the build.asar option in the Package.json file is set to false"
-        ) +
-        "\n"
-    );
+    errorLog(`\n ${chalk.red(
+      "Please make sure the build.asar option in the Package.json file is set to false"
+    )}\n`)
     return;
   }
 
   if (hotPublishConfigName === "") {
-    console.log(
-      "\n" +
-        errorLog +
-        "  " +
-        chalk.red(
-          "HotPublishConfigName is not set, which will cause the update to fail, please set it in the config/index.js \n"
-        ) +
-        chalk.red.bold(`\n  Packing failed \n`)
-    );
+    errorLog(`\n ${chalk.red(
+      "HotPublishConfigName is not set, which will cause the update to fail, please set it in the config/index.js \n"
+    )}${chalk.red.bold(`\n  Packing failed \n`)}`)
     process.exit(1);
   }
 
   stat(join(buildPath, "resources", "app"), async (err, stats) => {
     if (err) {
-      console.log(
-        "\n" +
-          errorLog +
-          "  " +
-          chalk.red(
-            "No resource files were found, please execute this command after the build command"
-          ) +
-          "\n"
-      );
+      errorLog(`\n ${chalk.red("No resource files were found, please execute this command after the build command"
+      )}\n`)
       return;
     }
 
@@ -101,7 +82,7 @@ const start = async () => {
       await ensureDir(packResourcesPath);
       await emptyDir(packResourcesPath);
       await copy(resourcesPath, packResourcesPath);
-      console.log(`${okayLog} ${chalk.cyan.bold(`File copy complete \n`)}`);
+      okayLog(`${chalk.cyan.bold(`File copy complete \n`)}`)
       await outputJSON(join(packPackagePath, "package.json"), {
         name: packageFile.name,
         productName: buildConfig.productName,
@@ -111,9 +92,7 @@ const start = async () => {
         author: packageFile.author,
         dependencies: packageFile.dependencies,
       });
-      console.log(
-        `${okayLog} ${chalk.cyan.bold(`Rewrite package file complete \n`)}`
-      );
+      okayLog(`${chalk.cyan.bold(`Rewrite package file complete \n`)}`)
       await ensureDir(outputPath);
       await emptyDir(outputPath);
       createZip(appPath, zipPath);
@@ -126,24 +105,18 @@ const start = async () => {
         name: `${hashName}.zip`,
         hash: sha256,
       });
-      console.log(
-        `${okayLog} ${chalk.cyan.bold(
-          `Zip file complete, Start cleaning up redundant files \n`
-        )}`
-      );
+      okayLog(`${chalk.cyan.bold(
+        `Zip file complete, Start cleaning up redundant files \n`
+      )}`)
       await remove(zipPath);
       await remove(appPath);
-      console.log(
-        `${okayLog} ${chalk.cyan.bold(
-          `Cleaning up redundant files completed \n`
-        )}`
-      );
-      console.log("\n" + doneLog + "  " + "The resource file is packaged!\n");
+      okayLog(`${chalk.cyan.bold(
+        `Cleaning up redundant files completed \n`
+      )}`)
+      doneLog("The resource file is packaged!\n")
       console.log("File location: " + chalk.green(outputPath) + "\n");
     } catch (error) {
-      console.log(
-        "\n" + errorLog + "  " + chalk.red(error.message || error) + "\n"
-      );
+      errorLog(`\n ${chalk.red("Resource file packaging failed")}\n${chalk.red(error.message || error)}`);
       process.exit(1);
     }
   });

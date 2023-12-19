@@ -8,7 +8,7 @@ import chalk from "chalk";
 import { rollup, OutputOptions } from "rollup";
 import { Listr } from "listr2";
 import rollupOptions from "./rollup.config";
-import { okayLog, errorLog, doneLog } from "./log";
+import { errorLog, doneLog } from "./log";
 
 const mainOpt = rollupOptions(process.env.NODE_ENV, "main");
 const isCI = process.env.CI || false;
@@ -27,7 +27,7 @@ async function clean() {
     "!build/lib/electron-build.*",
     "!build/icons/icon.*",
   ]);
-  console.log(`\n${doneLog}clear done`);
+  doneLog('clear done')
   if (process.env.BUILD_TARGET === "onlyClean") process.exit();
 }
 
@@ -44,9 +44,8 @@ async function unionBuild() {
             const build = await rollup(mainOpt);
             await build.write(mainOpt.output as OutputOptions);
           } catch (error) {
-            console.error(`\n${error}\n`);
-            console.log(`\n  ${errorLog}failed to build main process`);
-            process.exit(1);
+            errorLog(`failed to build main process\n`);
+            return Promise.reject(error);
           }
         },
       },
@@ -55,29 +54,27 @@ async function unionBuild() {
         task: async (_, tasks) => {
           try {
             await build({ configFile: join(__dirname, "vite.config.ts") });
-            tasks.output = `${okayLog}take it away ${chalk.yellow(
+            tasks.output = `take it away ${chalk.yellow(
               "`electron-builder`"
             )}\n`;
           } catch (error) {
-            console.error(`\n${error}\n`);
-            console.log(`\n  ${errorLog}failed to build renderer process`);
-            process.exit(1);
+            errorLog(`failed to build renderer process\n`);
+            return Promise.reject(error);
           }
         },
-        options: { persistentOutput: true },
       },
     ],
     {
       exitOnError: true,
     }
   );
-  tasksLister.run();
+  await tasksLister.run();
 }
 
 async function web() {
   await deleteAsync(["dist/web/*", "!.gitkeep"]);
   build({ configFile: join(__dirname, "vite.config") }).then((res) => {
-    console.log(`${doneLog}RendererProcess build success`);
+    doneLog('RendererProcess build success')
     process.exit();
   });
 }
